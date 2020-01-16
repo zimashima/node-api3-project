@@ -15,7 +15,7 @@ router.post('/', validateUser, async (req, res) => {
 });
 
 router.post('/:id/posts', validateUserId, validatePost, async (req, res) => {
-  const newPost = { ...req.body, user_id: req.params.id}
+  const newPost = { ...req.body, user_id: req.user}
   try{
     const success = await postDb.insert(newPost)
     res.status(201).json(success)
@@ -38,7 +38,8 @@ router.get('/', async (req, res) => {
 
 router.get('/:id', validateUserId, async (req, res) => {
   try{
-    const user = await db.getById(req.params.id)
+    console.log(req.user)
+    const user = await db.getById(req.user)
     res.status(200).json(user)
   }
   catch{
@@ -48,7 +49,7 @@ router.get('/:id', validateUserId, async (req, res) => {
 
 router.get('/:id/posts', validateUserId, async (req, res) => {
   try{
-    const posts = await db.getUserPosts(req.params.id)
+    const posts = await db.getUserPosts(req.user)
     res.status(200).json(posts)
   }
   catch{
@@ -59,7 +60,7 @@ router.get('/:id/posts', validateUserId, async (req, res) => {
 router.delete('/:id', validateUserId, async (req, res) => {
   // do your magic!
   try {
-    const result = await db.remove(req.params.id)
+    const result = await db.remove(req.user)
     res.status(200).json({ status: `User Id: ${result} has been successfully deleted`})
   }
   catch {
@@ -70,7 +71,7 @@ router.delete('/:id', validateUserId, async (req, res) => {
 router.put('/:id', validateUserId, validateUser, async (req, res) => {
   // do your magic!
   try {
-    await db.update(req.params.id, { ...req.body, id: req.params.id })
+    await db.update(req.user, { ...req.body, id: req.user })
     const newResult = await db.getById(req.params.id)
     res.status(200).json(newResult)
   }
@@ -93,6 +94,7 @@ async function validatePostId(req, res, next) {
 async function validateUserId(req, res, next) {
   const user = await db.getById(req.params.id)
   if (user){
+    req.user = user.id
     next()
   } else {
     res.status(400).json({ message: "invalid user id" })
